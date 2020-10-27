@@ -1,4 +1,5 @@
 extern crate bufstream;
+extern crate crossbeam;
 
 use std::str::FromStr;
 use std::io::Write;
@@ -8,12 +9,11 @@ use std::thread::spawn;
 use bufstream::BufStream;
 use std::io::BufRead;
 use std::sync::{Arc,RwLock};
-use std::sync::mpsc;
-use std::sync::mpsc::{Sender, Receiver};
+use crossbeam::channel;
 
-fn handle_connection(stream: &mut BufStream<TcpStream>, chan: Sender<String>, arc: Arc<RwLock<Vec<String>>>) {
+fn handle_connection(stream: &mut BufStream<TcpStream>, chan: channel::Sender<String>, arc: Arc<RwLock<Vec<String>>>) {
     stream.write(b"Welcome to Simple Chat Server!\n").unwrap();
-    stream.write(b"Plz input yourname: ").unwrap();
+    stream.write(b"Input username: ").unwrap();
     stream.flush().unwrap();
     let mut name = String::new();
     stream.read_line(&mut name).unwrap();
@@ -48,7 +48,7 @@ fn main() {
     let addr: SocketAddr = SocketAddr::from_str("127.0.0.1:8888").unwrap();
     let listener = TcpListener::bind(addr).unwrap();
 
-    let (send, recv): (Sender<String>, Receiver<String>) = mpsc::channel();
+    let (send, recv): (channel::Sender<String>, channel::Receiver<String>) = channel::unbounded(); 
     let arc: Arc<RwLock<Vec<String>>> = Arc::new(RwLock::new(Vec::new()));
 
     let arc_w = arc.clone();
